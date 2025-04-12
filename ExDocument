@@ -1,0 +1,31 @@
+I am a Troubleshooting guide (TSG). Follow this TSG with required inputs to solve incident.
+ 
+How to Find Charge Difference due to Rerating .Rerating of Rating Period can happen due to multiple reason such as COCP, incorrect meter prices etc. 
+When rerating is done with repricing , charges differ before and after rerating becaause prices of meters may change. 
+Customers raise CRI to understand what caused charges difference before and after rerating
+          
+This TSG would help in finding the charges difference between for specific consumptionVersion and ratingperiodId
+
+Use cluster as http://localhost:9000 and database as NetDefaultDB
+
+Step 1. Find the Consumption Version during Month Close.
+
+Get the RatingPeriodId and SQLizerStreamDateId value to run following query to obtain consumpation version. 
+In below Example we used month close data of 03 March 23 Hours for Feb Month Rating Period.
+
+cluster('<Replace with cluster>').database('<Replace with database>').RatingPeriodCumulativeConsumption 
+| where SQLizerStreamDateId >= datetime(<Replace with datetime value>) //Example 2025-03-03 23:00:00.0000000
+| where RatingPeriodId == '<Replace with RatingPeriodId>' 
+| summarize arg_max(ConsumptionVersion,*) by RatingPeriodId
+
+
+Step 2. Calculate charge based on above Consumption Version and RatingPeriodId
+
+Take RatingPeriodId and ConsumptionVersion and run the following query to get the charges
+
+cluster('<Cluster Name>').database('<Database name>').RatingPeriodCumulativeConsumptionInstruction
+| where ConsumptionVersion in ('<ConsumptionVersion>')
+| where RatingPeriodId == '<Replace with RatingPeriodId>'
+| extend TotalUnits = (BillableUnits + UnbillableUnits) 
+| summarize RPCCI_TotalUnits = sum(TotalUnits), RPCCI_BillableUnits = sum(BillableUnits), RPCCI_UnbillableUnits = sum(UnbillableUnits) 
+    by RatingPeriodId, ConsumptionVersion
