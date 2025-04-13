@@ -2,7 +2,7 @@ Comprehensive Troubleshooting Guide: Investigating Slow HTTP Requests Using KQL
 📌 Problem Statement
 Users and monitoring tools report performance degradation and high response times on multiple services in a distributed microservices architecture. This guide provides a detailed, step-by-step troubleshooting framework using Azure Monitor / Application Insights with Kusto Query Language (KQL).
 
-Use cluster as http://localhost:9000 and database as NetDefaultDB
+Use cluster as http://localhost:9000 and database as LocalDB
 
 🔍 Step 1: Identify Slow Requests
 Goal: Capture all requests taking longer than the acceptable threshold (e.g., 3 seconds).
