@@ -1,0 +1,134 @@
+Comprehensive Troubleshooting Guide: Investigating Slow HTTP Requests Using KQL
+📌 Problem Statement
+Users and monitoring tools report performance degradation and high response times on multiple services in a distributed microservices architecture. This guide provides a detailed, step-by-step troubleshooting framework using Azure Monitor / Application Insights with Kusto Query Language (KQL).
+🔍 Step 1: Identify Slow Requests
+Goal: Capture all requests taking longer than the acceptable threshold (e.g., 3 seconds).
+
+```kql
+requests
+| where timestamp > ago(24h)
+| where duration > 3s
+| project timestamp, name, url, duration, resultCode, cloud_RoleName, operation_Id
+| order by duration desc
+```
+
+Checklist:
+- Look for repeated patterns (same endpoint slow multiple times).
+- Take note of specific services (cloud_RoleName) involved.
+- Record any 500 or 503 result codes for correlation with errors.
+🧱 Step 2: Group & Analyze by Endpoint, Service, and Result Code
+Goal: Determine the most problematic endpoints and services.
+
+```kql
+requests
+| where timestamp > ago(24h) and duration > 3s
+| summarize SlowCount=count(), AvgDuration=avg(duration) by name, cloud_RoleName, resultCode
+| order by SlowCount desc
+```
+
+Checklist:
+- Which APIs are frequently slow?
+- Are they tied to a specific microservice?
+- Do high average durations align with certain result codes (e.g., 5xx)?
+🔗 Step 3: Investigate Dependency Bottlenecks
+Goal: See if slowness is caused by downstream services.
+
+```kql
+dependencies
+| where timestamp > ago(24h)
+| where duration > 2s
+| summarize AvgDuration=avg(duration), MaxDuration=max(duration), Count=count() by target, name, success
+| order by AvgDuration desc
+```
+
+Checklist:
+- Any external dependencies consistently slow?
+- Any failed (success = false) dependencies?
+- Note APIs or DBs with high duration or failure rate.
+⚠️ Step 4: Correlate Exceptions with Slowness
+Goal: Understand if errors coincide with slow requests.
+
+```kql
+requests
+| where timestamp > ago(24h) and duration > 3s
+| join kind=leftouter (
+    exceptions
+    | project operation_Id, exceptionType, outerMessage
+) on operation_Id
+| project timestamp, name, duration, exceptionType, outerMessage
+| order by duration desc
+```
+
+Checklist:
+- Any recurring exception types (e.g., TimeoutException, NullReferenceException)?
+- Are exceptions service-specific?
+- What’s the exception message (outerMessage)?
+🧪 Step 5: Evaluate Request Performance Over Time
+Goal: Detect performance regressions, trends, or bursts.
+
+```kql
+requests
+| where timestamp > ago(7d)
+| summarize AvgDuration=avg(duration), MaxDuration=max(duration) by bin(timestamp, 1h), cloud_RoleName
+| render timechart
+```
+
+Checklist:
+- Any spikes around recent deployments or configuration changes?
+- Consistent degradation during specific times of day?
+🧭 Step 6: Deep Dive into a Problematic Operation
+Goal: Trace full telemetry (requests + dependencies + exceptions) of a slow operation.
+
+```kql
+let opId = 'opid-1002';
+requests
+| where operation_Id == opId
+| join kind=leftouter (dependencies | where operation_Id == opId) on operation_Id
+| join kind=leftouter (exceptions | where operation_Id == opId) on operation_Id
+| project timestamp, name, target, duration, resultCode, exceptionType, outerMessage
+```
+
+Checklist:
+- Review full telemetry for a single operation.
+- Identify root cause: dependency slowness or app-side bug?
+📈 Step 7: Analyze System-Wide Error Rate
+```kql
+requests
+| where timestamp > ago(24h)
+| summarize TotalRequests=count(), Failures=countif(resultCode startswith "5") by cloud_RoleName
+| extend FailureRate = todouble(Failures) / TotalRequests * 100
+| order by FailureRate desc
+```
+
+Checklist:
+- Which services have high failure rates?
+- Prioritize high-FailureRate services for remediation.
+📦 Step 8: Application Performance Bottleneck Summary
+```kql
+requests
+| where timestamp > ago(24h)
+| summarize Total=count(), AvgDuration=avg(duration), MaxDuration=max(duration), Failures=countif(resultCode startswith "5") by cloud_RoleName
+| extend FailureRate = todouble(Failures)/Total * 100
+| order by AvgDuration desc
+```
+
+Use: Executive summary of service health/performance
+✅ Suggested Actions & Fixes
+| Scenario                                | Recommendations                                                                 |
+|-----------------------------------------|----------------------------------------------------------------------------------|
+| Slow endpoints w/o errors               | Profile code, reduce DB round trips, enable caching                            |
+| High dependency duration                | Optimize DB queries, improve 3rd party SLAs, retry policies                    |
+| Frequent 5xx errors                     | Implement better error handling, retry logic, investigate specific exceptions  |
+| Spikes in request time                  | Correlate with deployments, test scaling, perform load testing                 |
+| Time-based degradation                  | Look into autoscaling, infrastructure bottlenecks (e.g., CPU/Memory pressure)  |
+🛠️ Tools & Follow-up
+- Dashboards: Build custom workbooks in Azure Monitor
+- Alerts: Setup alerts for `duration > 5s`, `resultCode startswith '5'`, and `FailureRate > 5%`
+- Performance Review: Conduct post-mortems with telemetry screenshots
+📋 Appendix: Custom Threshold Guidelines
+| Metric                        | Baseline         | Alert Threshold | Comments                     |
+|------------------------------|------------------|-----------------|------------------------------|
+| Request Duration (Avg)       | < 2 seconds       | > 5 seconds     | Depends on endpoint purpose  |
+| Dependency Call Duration     | < 1 second        | > 3 seconds     | Especially for DB/API calls  |
+| Request Failure Rate         | < 1%              | > 5%            | Consider service tier/load   |
+| Exception Rate               | < 0.5%            | > 2%            | Alert on spike or trend      |
