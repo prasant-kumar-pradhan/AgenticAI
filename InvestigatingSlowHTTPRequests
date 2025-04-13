@@ -1,11 +1,14 @@
 Comprehensive Troubleshooting Guide: Investigating Slow HTTP Requests Using KQL
 📌 Problem Statement
 Users and monitoring tools report performance degradation and high response times on multiple services in a distributed microservices architecture. This guide provides a detailed, step-by-step troubleshooting framework using Azure Monitor / Application Insights with Kusto Query Language (KQL).
+
+Use cluster as http://localhost:9000 and database as NetDefaultDB
+
 🔍 Step 1: Identify Slow Requests
 Goal: Capture all requests taking longer than the acceptable threshold (e.g., 3 seconds).
 
 ```kql
-requests
+cluster('<Replace with cluster>').database('<Replace with database>').requests
 | where timestamp > ago(24h)
 | where duration > 3s
 | project timestamp, name, url, duration, resultCode, cloud_RoleName, operation_Id
@@ -20,7 +23,7 @@ Checklist:
 Goal: Determine the most problematic endpoints and services.
 
 ```kql
-requests
+cluster('<Replace with cluster>').database('<Replace with database>').requests
 | where timestamp > ago(24h) and duration > 3s
 | summarize SlowCount=count(), AvgDuration=avg(duration) by name, cloud_RoleName, resultCode
 | order by SlowCount desc
@@ -34,7 +37,7 @@ Checklist:
 Goal: See if slowness is caused by downstream services.
 
 ```kql
-dependencies
+cluster('<Replace with cluster>').database('<Replace with database>').dependencies
 | where timestamp > ago(24h)
 | where duration > 2s
 | summarize AvgDuration=avg(duration), MaxDuration=max(duration), Count=count() by target, name, success
@@ -49,10 +52,10 @@ Checklist:
 Goal: Understand if errors coincide with slow requests.
 
 ```kql
-requests
+cluster('<Replace with cluster>').database('<Replace with database>').requests
 | where timestamp > ago(24h) and duration > 3s
 | join kind=leftouter (
-    exceptions
+    cluster('<Replace with cluster>').database('<Replace with database>').exceptions
     | project operation_Id, exceptionType, outerMessage
 ) on operation_Id
 | project timestamp, name, duration, exceptionType, outerMessage
@@ -67,7 +70,7 @@ Checklist:
 Goal: Detect performance regressions, trends, or bursts.
 
 ```kql
-requests
+cluster('<Replace with cluster>').database('<Replace with database>').requests
 | where timestamp > ago(7d)
 | summarize AvgDuration=avg(duration), MaxDuration=max(duration) by bin(timestamp, 1h), cloud_RoleName
 | render timechart
@@ -81,10 +84,10 @@ Goal: Trace full telemetry (requests + dependencies + exceptions) of a slow oper
 
 ```kql
 let opId = 'opid-1002';
-requests
+cluster('<Replace with cluster>').database('<Replace with database>').requests
 | where operation_Id == opId
-| join kind=leftouter (dependencies | where operation_Id == opId) on operation_Id
-| join kind=leftouter (exceptions | where operation_Id == opId) on operation_Id
+| join kind=leftouter (cluster('<Replace with cluster>').database('<Replace with database>').dependencies | where operation_Id == opId) on operation_Id
+| join kind=leftouter (cluster('<Replace with cluster>').database('<Replace with database>').exceptions | where operation_Id == opId) on operation_Id
 | project timestamp, name, target, duration, resultCode, exceptionType, outerMessage
 ```
 
@@ -93,7 +96,7 @@ Checklist:
 - Identify root cause: dependency slowness or app-side bug?
 📈 Step 7: Analyze System-Wide Error Rate
 ```kql
-requests
+cluster('<Replace with cluster>').database('<Replace with database>').requests
 | where timestamp > ago(24h)
 | summarize TotalRequests=count(), Failures=countif(resultCode startswith "5") by cloud_RoleName
 | extend FailureRate = todouble(Failures) / TotalRequests * 100
@@ -105,7 +108,7 @@ Checklist:
 - Prioritize high-FailureRate services for remediation.
 📦 Step 8: Application Performance Bottleneck Summary
 ```kql
-requests
+cluster('<Replace with cluster>').database('<Replace with database>').requests
 | where timestamp > ago(24h)
 | summarize Total=count(), AvgDuration=avg(duration), MaxDuration=max(duration), Failures=countif(resultCode startswith "5") by cloud_RoleName
 | extend FailureRate = todouble(Failures)/Total * 100
