@@ -9,7 +9,7 @@ Goal: Capture all requests taking longer than the acceptable threshold (e.g., 3 
 
 ```kql
 cluster('<Replace with cluster>').database('<Replace with database>').requests
-| where timestamp > ago(24h)
+| where timestamp > ago(24d)
 | where duration > 3s
 | project timestamp, name, url, duration, resultCode, cloud_RoleName, operation_Id
 | order by duration desc
@@ -24,7 +24,7 @@ Goal: Determine the most problematic endpoints and services.
 
 ```kql
 cluster('<Replace with cluster>').database('<Replace with database>').requests
-| where timestamp > ago(24h) and duration > 3s
+| where timestamp > ago(24d) and duration > 3s
 | summarize SlowCount=count(), AvgDuration=avg(duration) by name, cloud_RoleName, resultCode
 | order by SlowCount desc
 ```
@@ -38,7 +38,7 @@ Goal: See if slowness is caused by downstream services.
 
 ```kql
 cluster('<Replace with cluster>').database('<Replace with database>').dependencies
-| where timestamp > ago(24h)
+| where timestamp > ago(24d)
 | where duration > 2s
 | summarize AvgDuration=avg(duration), MaxDuration=max(duration), Count=count() by target, name, success
 | order by AvgDuration desc
@@ -53,7 +53,7 @@ Goal: Understand if errors coincide with slow requests.
 
 ```kql
 cluster('<Replace with cluster>').database('<Replace with database>').requests
-| where timestamp > ago(24h) and duration > 3s
+| where timestamp > ago(24d) and duration > 3s
 | join kind=leftouter (
     cluster('<Replace with cluster>').database('<Replace with database>').exceptions
     | project operation_Id, exceptionType, outerMessage
@@ -71,7 +71,7 @@ Goal: Detect performance regressions, trends, or bursts.
 
 ```kql
 cluster('<Replace with cluster>').database('<Replace with database>').requests
-| where timestamp > ago(7d)
+| where timestamp > ago(24d)
 | summarize AvgDuration=avg(duration), MaxDuration=max(duration) by bin(timestamp, 1h), cloud_RoleName
 | render timechart
 ```
@@ -97,7 +97,7 @@ Checklist:
 📈 Step 7: Analyze System-Wide Error Rate
 ```kql
 cluster('<Replace with cluster>').database('<Replace with database>').requests
-| where timestamp > ago(24h)
+| where timestamp > ago(24d)
 | summarize TotalRequests=count(), Failures=countif(resultCode startswith "5") by cloud_RoleName
 | extend FailureRate = todouble(Failures) / TotalRequests * 100
 | order by FailureRate desc
@@ -109,7 +109,7 @@ Checklist:
 📦 Step 8: Application Performance Bottleneck Summary
 ```kql
 cluster('<Replace with cluster>').database('<Replace with database>').requests
-| where timestamp > ago(24h)
+| where timestamp > ago(24d)
 | summarize Total=count(), AvgDuration=avg(duration), MaxDuration=max(duration), Failures=countif(resultCode startswith "5") by cloud_RoleName
 | extend FailureRate = todouble(Failures)/Total * 100
 | order by AvgDuration desc
