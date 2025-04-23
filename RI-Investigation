@@ -64,11 +64,13 @@ cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataSt
 | where EffectiveEnd > now();
 
 ```kql
+
 cluster('<Replace cluster value>').database('<Replace database value>').RIReportsDailySummaryProd 
-| where UsageDateId between (20250212...20250422)
+| where UsageDateId >= 20250212 and UsageDateId <= 20250422
 | where ReservationOrderId in (<Replace ReservationOrderID from previous step>)
 | summarize arg_max(SliceEndTime, *) by UsageDateId, ReservationId, ReservationOrderId
 | project UsageDateId, ReservationOrderId, ReservationId, AvgUtilizationPercentage
+
 ```
 ________________________________________
 ✅ What to Check:
