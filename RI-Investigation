@@ -136,6 +136,17 @@ o	autofitGroup must not be null
 cluster('<Replace cluster value>').database('<Replace database value>').UAEUsageData 
 | where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59) 
 |where entitlement_id in ( < Replace with all Subscription GUIDs from step 4 >)
+|where location in ('eastus2')
+|distinct metered_resource_id
+|join kind=inner (cluster('<Replace cluster value>').database('<Replace database value>').AI_ServiceHierarchy
+)
+on $left.metered_resource_id==$right.ResourceGUID
+|where ServiceTierName contains "Fabric Capacity"//update from the prev results
+| project ResourceGUID
+|join kind=inner(cluster('<Replace cluster value>').database('<Replace database value>').RIProductMetadata)
+on $left.ResourceGUID==$right.MeterId 
+|where AutoFitGroup != ""
+|distinct MeterId
 
 ```
 ✅ Output Details to Capture:
