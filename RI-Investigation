@@ -68,7 +68,7 @@ cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataSt
 
 cluster('<Replace cluster value>').database('<Replace database value>').RIReportsDailySummaryProd 
 | where UsageDateId >= 20250212 and UsageDateId <= 20250422
-| where ReservationOrderId in (<Replace ReservationOrderID from previous step>)
+| where ReservationOrderId in (<Replace ReservationOrderID field from step 1 >)
 | summarize arg_max(SliceEndTime, *) by UsageDateId, ReservationId, ReservationOrderId
 | project UsageDateId, ReservationOrderId, ReservationId, AvgUtilizationPercentage
 
