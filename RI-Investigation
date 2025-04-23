@@ -160,7 +160,7 @@ Analyze hourly usage to determine if the customer's reserved instance was underu
 ________________________________________
 🔧 Steps to Execute:
 •	Input Required:
-o	Entitlement IDs (subscription GUIDs) from earlier subscription scope results
+o	Entitlement IDs (subscription GUIDs) from step 4 results
 o	Meter Resource GUIDs from the eligible meters step
 o	Region from previous steps (e.g., 'eastus2')
 o	Reserved Quantity from the step where total RI quantity was calculated (e.g., 64)
@@ -173,7 +173,7 @@ o	Start & End Date:
 
 cluster('<Replace cluster value>').database('<Replace database value>').UAEUsageData
 | where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59)
-| where entitlement_id in (Subscription GUIDs from Step 5)
+| where entitlement_id in (< Replace with all Subscription GUIDs from step 4 >)
 | where location in ('eastus2')
 | summarize sum(quantity) by bin(usage_date_time, 1h), reserved_qty = <Replace the value of RIQtyTotal from step 1>
 
