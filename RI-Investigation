@@ -82,15 +82,15 @@ Evaluate the daily utilization of specific Reserved Instances (RIs) using their 
 ________________________________________
 🔧 Steps to Execute:
 •	Input:
-o	Use ROIDs and Effective Start Date from the previous RI metadata results.
+o	Use ReservationOrderIDs and Effective Start Date from the previous RI metadata results.
 •	Run the KQL Query
 cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataStore 
-| where ReservationOrderID in (<ReservationOrderID from previous step>) 
+| where ReservationOrderID in (<Replace ReservationOrderID from previous step>) 
 | where EffectiveEnd > now();
 
 cluster('<Replace cluster value>').database('<Replace database value>').RIReportsDailySummaryProd 
-| where UsageDateId between (20250212 ... 20250422)
-| where ReservationOrderId in (<ReservationOrderID from previous step>)
+| where UsageDateId between (20250212...20250422)
+| where ReservationOrderId in (<Replace ReservationOrderID from previous step>)
 | summarize arg_max(SliceEndTime, *) by UsageDateId, ReservationId, ReservationOrderId
 | project UsageDateId, ReservationOrderId, ReservationId, AvgUtilizationPercentage
 ________________________________________
