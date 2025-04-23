@@ -9,7 +9,7 @@ o	Locate the ReservationOrderID from the IcM.
 •	Run the KQL Query
 ```kql
 
-cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataStore
+cluster('<Replace cluster value>').database('<Replace database value>').RIMetadataStore
 | where ReservationOrderID in ("<Insert ROID from IcM>")
 | where EffectiveEnd > now()
 | project 
@@ -49,7 +49,7 @@ o	Scope Type: Shared
 •	Run the KQL Query
 ```kql
 
-cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataStore
+cluster('<Replace cluster value>').database('<Replace database value>').RIMetadataStore
 | where EnrollmentId == 'EnrollmentId from Step 1'
 | where Region == 'eastus2'
 | where RICategory == 'FabricCapacity'
@@ -88,7 +88,7 @@ cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataSt
 | where ReservationOrderID in (<ReservationOrderID from previous step>) 
 | where EffectiveEnd > now();
 
-cluster(<Replace cluster value>).database(<Replace database value>).RIReportsDailySummaryProd 
+cluster('<Replace cluster value>').database('<Replace database value>').RIReportsDailySummaryProd 
 | where UsageDateId between (20250212 ... 20250422)
 | where ReservationOrderId in (<ReservationOrderID from previous step>)
 | summarize arg_max(SliceEndTime, *) by UsageDateId, ReservationId, ReservationOrderId
@@ -109,7 +109,7 @@ ________________________________________
 •	Input:
 o	Use the Reservation Order ID  captured in previous steps
 •	Run the KQL Query
-cluster(<Replace cluster value>).database(<Replace database value>).Reservation
+cluster('<Replace cluster value>').database('<Replace database value>').Reservation
 | where ReservationOrderId in (<Use ReservationOrderId from step 1>)
 | order by Version desc
 | project 
@@ -132,7 +132,7 @@ ________________________________________
 •	Input:
 o	Use the MeterId found in step 1
 •	Run the KQL Query
-cluster(<Replace cluster value>).database(<Replace database value>).RIProductMetadata
+cluster('<Replace cluster value>').database('<Replace database value>').RIProductMetadata
 | where MeterId in (<MeterId from Step 1>)
 | distinct ArmRegionName, ArmSkuName
 ________________________________________
@@ -154,7 +154,7 @@ o	End Date → current date
 o	autofitGroup must not be null
 •	Run the KQL Query
 ```kql
-cluster(<Replace cluster value>).database(<Replace database value>).UAEUsageData 
+cluster('<Replace cluster value>').database('<Replace database value>').UAEUsageData 
 | where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59) 
 |where entitlement_id in (Subscription GUIDs from Previous step)
 ```
@@ -176,7 +176,7 @@ o	Start & End Date:
 2.	End = Current Date (e.g., 2025-04-22 23:59)
 •	Run the KQL Query
 ```kql
-cluster(<Replace cluster value>).database(<Replace database value>).UAEUsageData
+cluster('<Replace cluster value>').database('<Replace database value>').UAEUsageData
 | where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59)
 | where entitlement_id in (Subscription GUIDs from Step 5
 )
