@@ -60,7 +60,7 @@ ________________________________________
 o	Use ReservationOrderIDs and Effective Start Date from the previous RI metadata results.
 •	Run the KQL Query
 cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataStore 
-| where ReservationOrderID in (<Replace ReservationOrderID from previous step>) 
+| where ReservationOrderID in (<Replace ReservationOrderID from step 1 >) 
 | where EffectiveEnd > now();
 
 ```kql
