@@ -156,7 +156,7 @@ o	autofitGroup must not be null
 ```kql
 cluster('<Replace cluster value>').database('<Replace database value>').UAEUsageData 
 | where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59) 
-|where entitlement_id in (Subscription GUIDs from Previous step)
+|where entitlement_id in ( < Replace with all Subscription GUIDs from step 4 >)
 ```
 ✅ Output Details to Capture:
 •	Unique eligible Meter IDs
