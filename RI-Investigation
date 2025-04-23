@@ -130,13 +130,16 @@ o	End Date → current date
 o	autofitGroup must not be null
 •	Run the KQL Query
 ```kql
+
 cluster('<Replace cluster value>').database('<Replace database value>').UAEUsageData 
 | where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59) 
 |where entitlement_id in ( < Replace with all Subscription GUIDs from step 4 >)
+
 ```
 ✅ Output Details to Capture:
-•	Unique eligible Meter IDs
+•	Get all unique eligible Meter IDs
 •	Corresponding Region, SKU, and AutoFitGroup
+
 7.	Hourly Usage Validation for Underutilization
 🎯 Goal:
 Analyze hourly usage to determine if the customer's reserved instance was underutilized. If the total usage (sum(quantity)) is less than the reserved quantity, it's a valid case of underutilization by design.
@@ -151,12 +154,15 @@ o	Start & End Date:
 1.	Start = Reservation EffectiveStart
 2.	End = Current Date (e.g., 2025-04-22 23:59)
 •	Run the KQL Query
+
 ```kql
+
 cluster('<Replace cluster value>').database('<Replace database value>').UAEUsageData
 | where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59)
 | where entitlement_id in (Subscription GUIDs from Step 5)
 | where location in ('eastus2')
 | summarize sum(quantity) by bin(usage_date_time, 1h), reserved_qty = 64
+
 ```
 ✅ Evaluation Criteria:
 •	Compare the sum(quantity) per hour with the reserved_qty.
