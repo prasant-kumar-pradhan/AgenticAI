@@ -1,5 +1,5 @@
 
-This TSG is to investigate underutilization or overutilization of reservation for given ROID in defined usage period.
+This TSG is to investigate under utilization or over utilization for a given ROID in defined usage period.
 
 Use Cluster as http://localhost:9000 and Database as LocalDB
 1.	📦 Retrieve Basic Reserved Instance (RI) Details
@@ -24,6 +24,7 @@ cluster('<Replace cluster value>').database('<Replace database value>').RIMetada
 •	RI Category → RICategory
 •	Scope Type → AppliedScopeType
 •	Meter → Meter_Resource_Id
+•	RIQtyTotal → RIQtyTotal
 
 2.	Get All Active Reservations Under a Enrollment
 🎯 Goal:
@@ -174,7 +175,7 @@ cluster('<Replace cluster value>').database('<Replace database value>').UAEUsage
 | where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59)
 | where entitlement_id in (Subscription GUIDs from Step 5)
 | where location in ('eastus2')
-| summarize sum(quantity) by bin(usage_date_time, 1h), reserved_qty = 64
+| summarize sum(quantity) by bin(usage_date_time, 1h), reserved_qty = <Replace the value of RIQtyTotal from step 1>
 
 ```
 ✅ Evaluation Criteria:
