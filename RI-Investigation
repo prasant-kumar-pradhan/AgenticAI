@@ -98,7 +98,7 @@ cluster('<Replace cluster value>').database('<Replace database value>').Reservat
 ________________________________________
 ✅ What to Capture:
 •	Focus only on the most recent entry (highest Version / latest LastUpdatedDateTime).
-•	From the AppliedScopes field, extract the subscription GUID(s) (typically formatted as "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx").
+•	From the AppliedScopes field, extract the subscription GUID(s) (typically formatted as "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"). Example: For AppliedScopes '/subscriptions/ee936f9f-48cf-4c16-b030-111111111118' the subscription guid would be ee936f9f-48cf-4c16-b030-111111111118 
 5.	Check Meter Details – Retrieve ArmSkuName
 🎯 Goal:
 Fetch the ArmSkuName and ArmRegionName associated with a specific Meter ID obtained from the Basic Reservation Details.
