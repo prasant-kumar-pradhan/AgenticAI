@@ -1,0 +1,191 @@
+Use Cluster as http://localhost:9000 and Database as LocalDB
+1.	📦 Retrieve Basic Reserved Instance (RI) Details
+🎯 Goal:
+Extract key metadata for a specific Reserved Instance (RI) using the provided Reservation Order ID (ROID) from an IcM ticket.
+________________________________________
+🔧 How  to Execute:
+•	Get the ROID
+o	Locate the ReservationOrderID from the IcM.
+•	Run the KQL Query
+```kql
+
+cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataStore
+| where ReservationOrderID in ("<Insert ROID from IcM>")
+| where EffectiveEnd > now()
+| project 
+    ReservationOrderID, 
+    ReservationID, 
+    EffectiveStart,
+    CreatedDate, 
+    EffectiveEnd,
+    TenantId,
+    EnrollmentId, 
+    ServiceType,
+    RICategory, 
+    Region,
+    AppliedScopes,
+    AppliedScopeType, 
+    RIQtyTotal,
+    Meter_Resource_Id
+```
+
+✅ Output Details to Capture:
+•	EA/Tenant ID → EnrollmentId, TenantId
+•	Region → Region
+•	RI Category → RICategory
+•	Scope Type → AppliedScopeType
+•	Meter → Meter_Resource_Id
+
+2.	Get All Active Reservations Under a Enrollment
+🎯 Goal:
+Identify and sum up all active Reserved Instances (RIs) under a specific Enrollment ID, filtered by region, scope type, and RI category. This is used to calculate the total reserved quantity. Here use the enrollmentId  found in previous step
+________________________________________
+🔧 Steps to Execute:
+•	Input Filters:
+o	Enrollment ID: <EnrollmentId from Step 1>
+o	Region: eastus2
+o	RI Category: FabricCapacity
+o	Scope Type: Shared
+•	Run the KQL Query
+```kql
+
+cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataStore
+| where EnrollmentId == 'EnrollmentId from Step 1'
+| where Region == 'eastus2'
+| where RICategory == 'FabricCapacity'
+| where AppliedScopeType == 'Shared'
+| where EffectiveEnd > now()
+| project 
+    ReservationOrderID, 
+    ReservationID, 
+    EffectiveStart,
+    CreatedDate, 
+    EffectiveEnd,
+    TenantId,
+    EnrollmentId, 
+    ServiceType,
+    RICategory, 
+    Region,
+    AppliedScopes,
+    AppliedScopeType, 
+    RIQtyTotal,
+    Meter_Resource_Id
+```
+
+✅ Output Details to Capture:
+•	Fetch the ReservationOrderID 
+•	Fetch the Effectivestart  date
+
+3.	Check Reserved Instance (RI) Utilization
+🎯 Goal:
+Evaluate the daily utilization of specific Reserved Instances (RIs) using their Reservation Order IDs (ROIDs) and Effective Start Dates to identify any underutilization (i.e., days with <100% utilization).
+________________________________________
+🔧 Steps to Execute:
+•	Input:
+o	Use ROIDs and Effective Start Date from the previous RI metadata results.
+•	Run the KQL Query
+cluster(<Replace cluster value>).database(<Replace database value>).RIMetadataStore 
+| where ReservationOrderID in (<ReservationOrderID from previous step>) 
+| where EffectiveEnd > now();
+
+cluster(<Replace cluster value>).database(<Replace database value>).RIReportsDailySummaryProd 
+| where UsageDateId between (20250212 ... 20250422)
+| where ReservationOrderId in (<ReservationOrderID from previous step>)
+| summarize arg_max(SliceEndTime, *) by UsageDateId, ReservationId, ReservationOrderId
+| project UsageDateId, ReservationOrderId, ReservationId, AvgUtilizationPercentage
+________________________________________
+✅ What to Check:
+•	Review the AvgUtilizationPercentage values for each day.
+•	If all values are 100% or above:
+→ Conclude that there is no underutilization and record the utilization details.
+•	If any value is below 100%:
+→ Flag as underutilized and proceed to usage-level investigation.
+
+4.	Usage Check – Step 1: Fetch Subscription (Scope) Details
+🎯 Goal:
+Begin the usage check by retrieving the most recent scope information for a given Reservation Order ID (ROID). Extract the subscription GUID(s) from the latest updated scope entry.
+________________________________________
+🔧 Steps to Execute:
+•	Input:
+o	Use the Reservation Order ID  captured in previous steps
+•	Run the KQL Query
+cluster(<Replace cluster value>).database(<Replace database value>).Reservation
+| where ReservationOrderId in (<Use ReservationOrderId from step 1>)
+| order by Version desc
+| project 
+    ReservationOrderId, 
+    ReservationId,
+    BenefitScope, 
+    Region,
+    AppliedScopes, 
+    Version, 
+    LastUpdatedDateTime
+________________________________________
+✅ What to Capture:
+•	Focus only on the most recent entry (highest Version / latest LastUpdatedDateTime).
+•	From the AppliedScopes field, extract the subscription GUID(s) (typically formatted as "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx").
+5.	Check Meter Details – Retrieve ArmSkuName
+🎯 Goal:
+Fetch the ArmSkuName and ArmRegionName associated with a specific Meter ID obtained from the Basic Reservation Details.
+________________________________________
+🔧 Steps to Execute:
+•	Input:
+o	Use the MeterId found in step 1
+•	Run the KQL Query
+cluster(<Replace cluster value>).database(<Replace database value>).RIProductMetadata
+| where MeterId in (<MeterId from Step 1>)
+| distinct ArmRegionName, ArmSkuName
+________________________________________
+✅ Output Details to Capture:
+•	ArmSkuName → Maps to the actual Azure SKU.
+•	ArmRegionName → Confirms the regional alignment of the SKU.
+
+6.	Collect All Eligible Meters
+🎯 Goal:
+Identify all eligible distinct meters associated with a reservation by filtering based on subscription, region, SKU, and time range.
+________________________________________
+🔧 Steps to Execute:
+•	Input Required:
+o	Subscription GUIDs → from the latest AppliedScopes (used as EntitlementId)
+o	Region → from ArmRegionName
+o	Arm SKU Name → from the previous Meter Details step
+o	Start Date → EffectiveStart of the reservation
+o	End Date → current date
+o	autofitGroup must not be null
+•	Run the KQL Query
+```kql
+cluster(<Replace cluster value>).database(<Replace database value>).UAEUsageData 
+| where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59) 
+|where entitlement_id in (Subscription GUIDs from Previous step)
+```
+✅ Output Details to Capture:
+•	Unique eligible Meter IDs
+•	Corresponding Region, SKU, and AutoFitGroup
+7.	Hourly Usage Validation for Underutilization
+🎯 Goal:
+Analyze hourly usage to determine if the customer's reserved instance was underutilized. If the total usage (sum(quantity)) is less than the reserved quantity, it's a valid case of underutilization by design.
+________________________________________
+🔧 Steps to Execute:
+•	Input Required:
+o	Entitlement IDs (subscription GUIDs) from earlier subscription scope results
+o	Meter Resource GUIDs from the eligible meters step
+o	Region from previous steps (e.g., 'eastus2')
+o	Reserved Quantity from the step where total RI quantity was calculated (e.g., 64)
+o	Start & End Date:
+1.	Start = Reservation EffectiveStart
+2.	End = Current Date (e.g., 2025-04-22 23:59)
+•	Run the KQL Query
+```kql
+cluster(<Replace cluster value>).database(<Replace database value>).UAEUsageData
+| where usage_date_time >= datetime(2025-02-12) and usage_date_time <= datetime(2025-04-22 23:59)
+| where entitlement_id in (Subscription GUIDs from Step 5
+)
+| where location in ('eastus2')
+| summarize sum(quantity) by bin(usage_date_time, 1h), reserved_qty = 64
+```
+✅ Evaluation Criteria:
+•	Compare the sum(quantity) per hour with the reserved_qty.
+•	If sum < reserved_qty → Underutilization is confirmed.
+•	Document as: “RI is underutilized by design” due to consistent usage below reserved commitment.
+
+
