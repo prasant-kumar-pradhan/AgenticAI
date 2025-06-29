@@ -1,7 +1,7 @@
 
 This TSG is to investigate under utilization or over utilization for a given ROID in defined usage period.
 
-Use Cluster as http://localhost:9000 and Database as LocalDB
+Use Cluster as http://localhost:8080 and Database as NetDefaultDB
 1.	📦 Retrieve Basic Reserved Instance (RI) Details
 🎯 Goal:
 Extract key metadata for a specific Reserved Instance (RI) using the provided Reservation Order ID (ROID) from an IcM ticket.
